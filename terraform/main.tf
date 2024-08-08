@@ -16,20 +16,37 @@ resource "yandex_iam_service_account" "sa-telegram-bot" {
   description = "service account to manage VMs"
 }
 
-resource "yandex_resourcemanager_folder_iam_member" "functions-role" {
+resource "yandex_resourcemanager_folder_iam_member" "function-invoker-role" {
   folder_id = "${var.yc_folder_id}"
   role      = "functions.functionInvoker"
   member    = "serviceAccount:${yandex_iam_service_account.sa-telegram-bot.id}"
 }
 
+resource "yandex_resourcemanager_folder_iam_member" "image-generation-user-role" {
+  folder_id = "${var.yc_folder_id}"
+  role      = "ai.imageGeneration.user"
+  member    = "serviceAccount:${yandex_iam_service_account.sa-telegram-bot.id}"
+}
+
+resource "yandex_resourcemanager_folder_iam_member" "functions-viewer-role" {
+  folder_id = "${var.yc_folder_id}"
+  role      = "functions.viewer"
+  member    = "serviceAccount:${yandex_iam_service_account.sa-telegram-bot.id}"
+}
+
 resource "yandex_function" "telegram-bot-silvana" {
-  depends_on = [yandex_iam_service_account.sa-telegram-bot, yandex_resourcemanager_folder_iam_member.functions-role]
+  depends_on = [
+    yandex_iam_service_account.sa-telegram-bot,
+    yandex_resourcemanager_folder_iam_member.function-invoker-role,
+    yandex_resourcemanager_folder_iam_member.image-generation-user-role,
+    yandex_resourcemanager_folder_iam_member.functions-viewer-role
+  ]
   name               = "telegram-bot-silvana"
   user_hash          = "1.0.0"
   runtime            = "python312"
   entrypoint         = "index.handler"
   memory             = "128"
-  execution_timeout  = "30"
+  execution_timeout  = "120"
   service_account_id = "${yandex_iam_service_account.sa-telegram-bot.id}"
   environment = {
     TELEGRAM_TOKEN = "${var.tg_bot_token}"
