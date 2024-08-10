@@ -1,14 +1,17 @@
-import telebot
-import telebot.async_telebot
+'''
+Serveless function for telegram bot
+'''
+
 import os
 import logging
 import random
-import requests
 import base64
 import json
 import io
 import time
-import asyncio
+import requests
+import telebot
+import telebot.async_telebot
 
 
 API_TOKEN = os.environ['TELEGRAM_TOKEN']
@@ -16,9 +19,9 @@ API_TOKEN = os.environ['TELEGRAM_TOKEN']
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
 bot = telebot.async_telebot.AsyncTeleBot(API_TOKEN)
-folder_id = None
-aim_header = None
-logger_interface = None
+FOLDER_ID = None
+AIM_HEADER = None
+LOGGER_INTERFACE = None
 
 
 def logging_configuration(logger):
@@ -33,29 +36,26 @@ def logging_configuration(logger):
 
 
 def get_folder_id(iam_token, version_id):
-    global aim_header
-    headers = {'Authorization': f'Bearer {iam_token}'}
-    aim_header = headers
+    AIM_HEADER = {'Authorization': f'Bearer {iam_token}'}
     function_id_req = requests.get(f'https://serverless-functions.api.cloud.yandex.net/functions/v1/versions/{version_id}',
-                                   headers=headers)
+                                   headers=AIM_HEADER)
     function_id_data = function_id_req.json()
     function_id = function_id_data['functionId']
-    folder_id_req = requests.get(f'https://serverless-functions.api.cloud.yandex.net/functions/v1/functions/{function_id}',
-                                 headers=headers)
-    folder_id_data = folder_id_req.json()
-    folder_id = folder_id_data['folderId']
-    return folder_id
+    FOLDER_ID_req = requests.get(f'https://serverless-functions.api.cloud.yandex.net/functions/v1/functions/{function_id}',
+                                 headers=AIM_HEADER)
+    FOLDER_ID_data = FOLDER_ID_req.json()
+    FOLDER_ID = FOLDER_ID_data['folderId']
+    return FOLDER_ID
 
 async def handler(event, context):
-    global folder_id, logger_interface
-    logger_interface = logging.getLogger('bot')
-    logging_configuration(logger_interface)
+    LOGGER_INTERFACE = logging.getLogger('bot')
+    logging_configuration(LOGGER_INTERFACE)
     iam_token = context.token["access_token"]
     version_id = context.function_version
-    folder_id = get_folder_id(iam_token, version_id)
+    FOLDER_ID = get_folder_id(iam_token, version_id)
 
     message = telebot.types.Update.de_json(event['body'])
-    logger_interface.info('\rMessage text: %s,\rSender: %s', message.message.text, message.message.from_user.username)
+    LOGGER_INTERFACE.info('\rMessage text: %s,\rSender: %s', message.message.text, message.message.from_user.username)
     await bot.process_new_updates([message])
     return {
         'statusCode': 200
@@ -67,10 +67,11 @@ async def start_message(message):
     message_text = "Во славу императора!"
     await bot.reply_to(message, message_text)
 
+
 @bot.message_handler(commands=['genimage',])
 async def yandex_art(message):
     prompt = {
-        "modelUri": f"art://{folder_id}/yandex-art/latest",
+        "modelUri": f"art://{FOLDER_ID}/yandex-art/latest",
         "generationOptions": {
             "seed": random.randint(0, 2**62),
             "aspectRatio": {
@@ -85,16 +86,16 @@ async def yandex_art(message):
             }
         ]
     }
-    result = requests.post('https://llm.api.cloud.yandex.net/foundationModels/v1/imageGenerationAsync', data=json.dumps(prompt), headers=aim_header)
+    result = requests.post('https://llm.api.cloud.yandex.net/foundationModels/v1/imageGenerationAsync', data=json.dumps(prompt), headers=AIM_HEADER)
     if result.status_code != 200:
-        logger_interface.error(result.text)
+        LOGGER_INTERFACE.error(result.text)
         await bot.reply_to(message, "Не могу сгенерировать изображение")
         return None
     result = result.json()
     while True:
-        result = requests.get('https://llm.api.cloud.yandex.net:443/operations/' + result['id'], headers=aim_header)
+        result = requests.get('https://llm.api.cloud.yandex.net:443/operations/' + result['id'], headers=AIM_HEADER)
         result = result.json()
-        logger_interface.info('Image was ready: %s', result['done'])
+        LOGGER_INTERFACE.info('Image was ready: %s', result['done'])
         await bot.reply_to(message, "Шедевр рисуется.", disable_notification=True)
         if result['done']:
             encoded = result['response']['image']
