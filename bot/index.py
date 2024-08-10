@@ -53,10 +53,13 @@ async def handler(event, context):
     iam_token = context.token["access_token"]
     version_id = context.function_version
     FOLDER_ID = get_folder_id(iam_token, version_id)
-
-    message = telebot.types.Update.de_json(event['body'])
-    LOGGER_INTERFACE.info('\rMessage text: %s,\rSender: %s', message.message.text, message.message.from_user.username)
-    await bot.process_new_updates([message])
+    try:
+        message = telebot.types.Update.de_json(event['body'])
+        LOGGER_INTERFACE.info('\rMessage text: %s,\rSender: %s', message.message.text, message.message.from_user.username)
+        await bot.process_new_updates([message])
+    except Exception as e:
+        LOGGER_INTERFACE.warning(event)
+        LOGGER_INTERFACE.error(e)
     return {
         'statusCode': 200
     }
