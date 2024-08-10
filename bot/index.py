@@ -8,7 +8,7 @@ import random
 import base64
 import json
 import io
-import time
+import asyncio
 import requests
 import telebot
 import telebot.async_telebot
@@ -25,18 +25,19 @@ AIM_HEADER = None
 LOGGER_INTERFACE = None
 
 
-def logging_configuration(logger):
-    logger.setLevel(logging.DEBUG)
+def logging_configuration(logger_object):
+    logger_object.setLevel(logging.DEBUG)
     sh_formatter = logging.Formatter(fmt='%(asctime)s %(process)d %(name)s %(levelname)s %(funcName)s %(message)s',
                                      datefmt='%d-%b-%y %H:%M:%S')
     sh = logging.StreamHandler()
     sh.setLevel(level=logging.INFO)
     sh.setFormatter(sh_formatter)
 
-    logger.addHandler(sh)
+    logger_object.addHandler(sh)
 
 
 def get_folder_id(iam_token, version_id):
+    global AIM_HEADER, FOLDER_ID
     AIM_HEADER = {'Authorization': f'Bearer {iam_token}'}
     function_id_req = requests.get(f'https://serverless-functions.api.cloud.yandex.net/functions/v1/versions/{version_id}',
                                    headers=AIM_HEADER)
@@ -55,6 +56,7 @@ async def handler(event, context):
             'statusCode': 401
         }
 
+    global LOGGER_INTERFACE
     LOGGER_INTERFACE = logging.getLogger('bot')
     logging_configuration(LOGGER_INTERFACE)
     iam_token = context.token["access_token"]
@@ -66,7 +68,7 @@ async def handler(event, context):
         await bot.process_new_updates([message])
     except Exception as e:
         LOGGER_INTERFACE.warning(event)
-        LOGGER_INTERFACE.error(e)
+        LOGGER_INTERFACE.error('Telebot problem: %s', e)
     return {
         'statusCode': 200
     }
@@ -96,6 +98,7 @@ async def yandex_art(message):
             }
         ]
     }
+
     result = requests.post('https://llm.api.cloud.yandex.net/foundationModels/v1/imageGenerationAsync', data=json.dumps(prompt), headers=AIM_HEADER)
     if result.status_code != 200:
         LOGGER_INTERFACE.error(result.text)
@@ -113,4 +116,4 @@ async def yandex_art(message):
             await bot.send_photo(message.chat.id, telebot.types.InputFile(io.BytesIO(data)), reply_parameters=telebot.types.ReplyParameters(message.message_id, message.chat.id, allow_sending_without_reply=True))
             break
 
-        time.sleep(10)
+        await asyncio.sleep(10)
