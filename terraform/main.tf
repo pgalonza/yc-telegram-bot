@@ -75,7 +75,7 @@ resource "yandex_api_gateway" "recognizer-bot-api-gw" {
   EOT
 
   provisioner "local-exec" {
-    command = "curl --request POST --url https://api.telegram.org/bot${var.tg_bot_token}/setWebhook --header 'content-type: application/json' --data '{\"url\": \"${yandex_api_gateway.recognizer-bot-api-gw.domain}/bot1\"}'"
+    command = "curl --request POST --url https://api.telegram.org/bot${var.tg_bot_token}/setWebhook --header 'content-type: application/json' --data '{\"url\": \"${yandex_api_gateway.recognizer-bot-api-gw.domain}/bot1\",\"secret_token\": \"${var.tg_bot_secret}\"}'"
   }
 }
 
@@ -88,6 +88,10 @@ variable "yc_zone" {
 }
 
 variable "tg_bot_token" {
+  type = string
+}
+
+variable "tg_bot_secret" {
   type = string
 }
 

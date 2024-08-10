@@ -15,6 +15,7 @@ import telebot.async_telebot
 
 
 API_TOKEN = os.environ['TELEGRAM_TOKEN']
+API_SECRET = os.environ['TELEGRAM_SECRET']
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
@@ -48,6 +49,12 @@ def get_folder_id(iam_token, version_id):
     return FOLDER_ID
 
 async def handler(event, context):
+    if event['headers'].get('X-Telegram-Bot-Api-Secret-Token') != API_SECRET:
+        logging.warning('Suspicious reauest: %s', event)
+        return {
+            'statusCode': 401
+        }
+
     LOGGER_INTERFACE = logging.getLogger('bot')
     logging_configuration(LOGGER_INTERFACE)
     iam_token = context.token["access_token"]
