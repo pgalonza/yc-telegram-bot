@@ -36,13 +36,13 @@ def logging_configuration(logger_object):
     logger_object.addHandler(sh)
 
 
-def get_folder_id(iam_token, version_id):
+def get_folder_id(iam_token, function_id):
     global AIM_HEADER, FOLDER_ID
     AIM_HEADER = {'Authorization': f'Bearer {iam_token}'}
-    function_id_req = requests.get(f'https://serverless-functions.api.cloud.yandex.net/functions/v1/versions/{version_id}',
-                                   headers=AIM_HEADER)
-    function_id_data = function_id_req.json()
-    function_id = function_id_data['functionId']
+    # function_id_req = requests.get(f'https://serverless-functions.api.cloud.yandex.net/functions/v1/versions/{version_id}',
+    #                                headers=AIM_HEADER)
+    # function_id_data = function_id_req.json()
+    # function_id = function_id_data['functionId']
     FOLDER_ID_req = requests.get(f'https://serverless-functions.api.cloud.yandex.net/functions/v1/functions/{function_id}',
                                  headers=AIM_HEADER)
     FOLDER_ID_data = FOLDER_ID_req.json()
@@ -60,8 +60,8 @@ async def handler(event, context):
     LOGGER_INTERFACE = logging.getLogger('bot')
     logging_configuration(LOGGER_INTERFACE)
     iam_token = context.token["access_token"]
-    version_id = context.function_version
-    FOLDER_ID = get_folder_id(iam_token, version_id)
+    function_id = context.function_name
+    FOLDER_ID = get_folder_id(iam_token, function_id)
     try:
         message = telebot.types.Update.de_json(event['body'])
         LOGGER_INTERFACE.info('\rMessage text: %s,\rSender: %s', message.message.text, message.message.from_user.username)
@@ -117,3 +117,40 @@ async def yandex_art(message):
             break
 
         await asyncio.sleep(10)
+
+
+@bot.message_handler(commands=['assystent',])
+async def yandex_gpt(message):
+    prompt = {
+        "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite/latest",
+        "completionOptions": {
+            "stream": False,
+            "temperature": 0.6,
+            "maxTokens": "2000"
+        },
+        "messages": [
+            {
+            "role": "system",
+            "text": "Представь что ты из вселенной Warhammer 4000 и отвечай в подобном стиле"
+            },
+            {
+            "role": "user",
+            "text": message.text.replace('/assystent ', '')
+            }
+        ]
+    }
+    AIM_HEADER.update(
+        {
+            'x-folder-id': FOLDER_ID,
+            'Content-Type': 'application/json'
+        }
+    )
+
+    result = requests.post('https://llm.api.cloud.yandex.net/foundationModels/v1/completion', data=json.dumps(prompt), headers=AIM_HEADER)
+    if result.status_code != 200:
+        LOGGER_INTERFACE.error(result.text)
+        await bot.reply_to(message, "Не могу сгенерировать текст")
+        return None
+    result = result.json()
+    for alternatives in result['result']['alternatives']:
+        await bot.reply_to(message, alternatives['message']['text'])
