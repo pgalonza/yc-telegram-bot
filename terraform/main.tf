@@ -71,6 +71,11 @@ resource "yandex_api_gateway" "recognizer-bot-api-gw" {
       title: Sample API
       version: 1.0.0
 
+    x-yc-apigateway:
+      rateLimit:
+        allRequests:
+          rps: 10
+
     paths:
       /bot1:
         post:
