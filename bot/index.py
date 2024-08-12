@@ -119,7 +119,7 @@ async def yandex_art(message):
         await asyncio.sleep(10)
 
 
-@bot.message_handler(commands=['assystent',])
+@bot.message_handler(commands=['assistant',])
 async def yandex_gpt(message):
     prompt = {
         "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite/latest",
@@ -135,7 +135,7 @@ async def yandex_gpt(message):
             },
             {
             "role": "user",
-            "text": message.text.replace('/assystent ', '')
+            "text": message.text.replace('/assistant ', '')
             }
         ]
     }
