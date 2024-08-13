@@ -9,6 +9,7 @@ import base64
 import json
 import io
 import asyncio
+import re
 import requests
 import telebot
 import telebot.async_telebot
@@ -49,6 +50,14 @@ def get_folder_id(iam_token, function_id):
     FOLDER_ID_data = FOLDER_ID_req.json()
     FOLDER_ID = FOLDER_ID_data['folderId']
     return FOLDER_ID
+
+
+def clean_text(raw_text):
+    pattern = r"\/\w*\s"
+    resutl = re.sub(pattern, '', raw_text)
+    LOGGER_INTERFACE.info('Text after clean: %s', resutl)
+    return resutl
+
 
 async def handler(event, context):
     if event['headers'].get('X-Telegram-Bot-Api-Secret-Token') != API_SECRET:
@@ -95,7 +104,7 @@ async def yandex_art(message):
         "messages": [
             {
                 "weight": "1",
-                "text": message.text.replace('/genimage ', '')
+                "text": clean_text(message.text)
             }
         ]
     }
@@ -136,7 +145,7 @@ async def yandex_gpt(message):
             },
             {
             "role": "user",
-            "text": message.text.replace('/assistant ', '')
+            "text": clean_text(message.text)
             }
         ]
     }
