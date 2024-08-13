@@ -57,6 +57,7 @@ resource "yandex_function" "telegram-bot-silvana" {
   service_account_id = "${yandex_iam_service_account.sa-telegram-bot.id}"
   environment = {
     TELEGRAM_TOKEN = "${var.tg_bot_token}"
+    TELEGRAM_ASSISTENT_ROLE = "${gpt_assistant_role}"
   }
   content {
     zip_filename = "../index.zip"
@@ -104,6 +105,10 @@ variable "tg_bot_token" {
 }
 
 variable "tg_bot_secret" {
+  type = string
+}
+
+variable "gpt_assistant_role" {
   type = string
 }
 

@@ -16,6 +16,7 @@ import telebot.async_telebot
 
 API_TOKEN = os.environ['TELEGRAM_TOKEN']
 API_SECRET = os.environ['TELEGRAM_SECRET']
+ASSISTENT_ROLE =  os.environ['GPT_ASSISTENT_ROLE']
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
@@ -131,7 +132,7 @@ async def yandex_gpt(message):
         "messages": [
             {
             "role": "system",
-            "text": "Представь что ты из вселенной Warhammer 4000 и отвечай в подобном стиле"
+            "text": ASSISTENT_ROLE
             },
             {
             "role": "user",
