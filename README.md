@@ -4,4 +4,4 @@
 
 start - Print wellcome message
 genimage - YandexART
-assistent - YandexGPT
+assistant - YandexGPT
