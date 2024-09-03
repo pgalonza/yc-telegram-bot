@@ -5,8 +5,7 @@ on:
     branches:
       - master
     paths:
-      - 'bot/index.py'
-      - 'bot/requirements.txt'
+      - 'bot/**'
       - '.github/workflows/deploy.yml'
 
 defaults:
@@ -66,6 +65,19 @@ jobs:
           --execution-timeout 120s --source-path index.zip
           --service-account-id ${{ vars.SA_ID }}
           --description TelegramBot
-          --environment TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
-          --environment TELEGRAM_SECRET=${{ secrets.TELEGRAM_SECRET }}
+          --environment TELEGRAM_TOKEN=$TELEGRAM_TOKEN
+          --environment TELEGRAM_SECRET=$TELEGRAM_SECRET
           --environment GPT_ASSISTENT_ROLE="${{ vars.GPT_ASSISTENT_ROLE }}"
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_SECRET: ${{ secrets.TELEGRAM_SECRET }}
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create bot commands
+        run: >
+          curl --silent --request POST --fail
+          --header "Content-Type: application/json"
+          --data "@bot/commands.json"
+          https://api.telegram.org/bot$TELEGRAM_TOKEN/setMyCommands
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}

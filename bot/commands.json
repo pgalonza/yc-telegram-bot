@@ -1,0 +1,16 @@
+{
+    "commands": [
+        {
+            "command": "start",
+            "description": "Print wellcome message"
+        },
+        {
+            "command": "genimage",
+            "description": "YandexART"
+        },
+        {
+            "command": "assistant",
+            "description": "YandexGPT"
+        }
+    ]
+}
