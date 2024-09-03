@@ -65,3 +65,7 @@ jobs:
           --runtime python312 --entrypoint index.handler --memory 128m
           --execution-timeout 120s --source-path index.zip
           --service-account-id ${{ vars.SA_ID }}
+          --description TelegramBot
+          --environment TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
+          --environment TELEGRAM_SECRET=${{ secrets.TELEGRAM_SECRET }}
+          --environment GPT_ASSISTENT_ROLE="${{ vars.GPT_ASSISTENT_ROLE }}"
