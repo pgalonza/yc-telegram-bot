@@ -63,4 +63,4 @@ jobs:
           yc serverless function version create --function-id=${{ vars.FUNCTION_ID }}
           --runtime python312 --entrypoint index.handler --memory 128m
           --execution-timeout 120s --source-path index.zip
-          --service-account-id string ${{ vars.SA_ID }}
+          --service-account-id ${{ vars.SA_ID }}
