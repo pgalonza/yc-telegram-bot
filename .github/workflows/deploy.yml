@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'bot/index.py'
+      - 'bot/requirements.txt'
 
 defaults:
   run:
