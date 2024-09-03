@@ -1,0 +1,63 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pack:
+    name: Pack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create ZIP-file
+        run: |
+          chmod +x ./pack.sh
+          ./pack.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          compression-level: 0
+          name: index-zip
+          path: "./index.zip"
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    container: alpine:3.20
+    needs: pack
+    steps:
+      - name: Install packages
+        shell: sh
+        run: |
+          apk add --no-cache bash curl
+      - name: Install yc-cli
+        run: |
+          curl -f -s -LO https://storage.yandexcloud.net/yandexcloud-yc/install.sh
+          bash install.sh -i /usr/local/yandex-cloud -n
+          ln -s /usr/local/yandex-cloud/bin/yc /usr/local/bin/yc
+      - name: Set SA key
+        run: |
+          echo $SA_KEY > key.json
+          yc config profile create sa-profile
+          yc config set service-account-key key.json
+          yc config set folder-id ${{ vars.FOLDER_ID }}
+        env:
+          SA_KEY: ${{ secrets.SA_KEY }}
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: index-zip
+          path: "./"
+      - name: Create version
+        run: >
+          yc serverless function version create --function-id=${{ vars.FUNCTION_ID }}
+          --runtime python312 --entrypoint index.handler --memory 128m
+          --execution-timeout 120s --source-path index.zip
+          --service-account-id string ${{ vars.SA_ID }}
